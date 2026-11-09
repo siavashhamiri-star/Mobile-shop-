@@ -20,7 +20,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          # Cache is omitted to guarantee success even if package-lock.json is missing or regenerated
 
       - name: 📦 Install Web Dependencies
         run: |
@@ -43,8 +42,38 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: 📱 Setup Android SDK Tools
-        uses: android-actions/setup-android@v3
+      - name: 📜 Pre-Accept All Android SDK Licenses
+        run: |
+          # Set ANDROID_HOME environment variable if not already set
+          export ANDROID_HOME=${ANDROID_HOME:-/usr/local/lib/android/sdk}
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          
+          # Create license directories in all potential Android SDK locations
+          mkdir -p $ANDROID_HOME/licenses
+          mkdir -p ~/.android/licenses
+
+          # Write mandatory license hashes (including Google TV, SDK, NDK & GDK)
+          LIC_SDK="24333f8a637b3749d10737a45c042284371cd301\n84831b9409646a918e30573bab4c9c91346d8abd\nd975375043a5000ee56811716b2306779dbe56fc"
+          LIC_TV="6010071946943d23dbb4f6a5d333aa27b8a65d9a"
+          LIC_GDK="33b6a2b64607f11b759f320ef9dff4ae5c47d97a"
+          LIC_INTEL="e986725930190b49d3e0003d034ec1143b710bee"
+          LIC_PREVIEW="84831b9409646a918e30573bab4c9c91346d8abd"
+
+          echo -e "$LIC_SDK" > $ANDROID_HOME/licenses/android-sdk-license
+          echo -e "$LIC_TV" > $ANDROID_HOME/licenses/android-googletv-license
+          echo -e "$LIC_GDK" > $ANDROID_HOME/licenses/google-gdk-license
+          echo -e "$LIC_INTEL" > $ANDROID_HOME/licenses/intel-android-sysimage-license
+          echo -e "$LIC_PREVIEW" > $ANDROID_HOME/licenses/android-sdk-preview-license
+
+          cp $ANDROID_HOME/licenses/* ~/.android/licenses/ || true
+
+          # Pipe 'yes' to all sdkmanager binaries to auto-accept remaining prompt queries
+          for SDK_BIN in "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager" "$ANDROID_HOME/tools/bin/sdkmanager"; do
+            if [ -f "$SDK_BIN" ]; then
+              echo "Accepting licenses via $SDK_BIN..."
+              yes | $SDK_BIN --licenses || true
+            fi
+          done
 
       - name: 🐘 Setup Gradle
         uses: gradle/actions/setup-gradle@v3
