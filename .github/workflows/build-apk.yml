@@ -3,6 +3,8 @@ name: Build & Package Android APK
 on:
   push:
     branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
@@ -18,15 +20,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          # Cache is omitted to guarantee success even if package-lock.json is missing or regenerated
 
       - name: 📦 Install Web Dependencies
-        run: npm ci || npm install
+        run: |
+          npm install --legacy-peer-deps
 
       - name: ⚙️ Securely Inject Environment Secrets
         run: |
           echo "Injecting environment variables from repository secrets safely..."
-          # Prevent exposing secrets in repository history:
           cat <<EOF > .env
           GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
           APP_URL="${{ secrets.APP_URL }}"
@@ -44,6 +46,9 @@ jobs:
       - name: 📱 Setup Android SDK Tools
         uses: android-actions/setup-android@v3
 
+      - name: 🐘 Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: 🔑 Decode Keystore (Optional for Signed Release)
         if: env.SIGNING_KEYSTORE_BASE64 != ''
         env:
@@ -58,8 +63,11 @@ jobs:
       - name: 🔨 Compile Android APK via Gradle
         working-directory: ./android
         run: |
-          chmod +x gradlew || gradle wrapper
-          ./gradlew assembleRelease || ./gradlew assembleDebug
+          if [ ! -f gradlew ]; then
+            gradle wrapper
+          fi
+          chmod +x gradlew
+          ./gradlew assembleDebug || gradle assembleDebug
 
       - name: 📤 Upload APK Artifact for Mobile Download
         uses: actions/upload-artifact@v4
