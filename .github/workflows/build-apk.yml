@@ -27,37 +27,24 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: 📱 Setup Android SDK Tools
-        uses: android-actions/setup-android@v3
-
-      - name: 📜 Pre-Accept All Android SDK Licenses
+      - name: 📜 Accept Android SDK Licenses
         run: |
-          export ANDROID_HOME=${ANDROID_HOME:-/usr/local/lib/android/sdk}
-          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          
-          mkdir -p $ANDROID_HOME/licenses
-          mkdir -p ~/.android/licenses
+          mkdir -p "$ANDROID_HOME/licenses"
+          mkdir -p "$HOME/.android/licenses"
 
-          LIC_SDK="24333f8a637b3749d10737a45c042284371cd301\n84831b9409646a918e30573bab4c9c91346d8abd\nd975375043a5000ee56811716b2306779dbe56fc"
-          LIC_TV="6010071946943d23dbb4f6a5d333aa27b8a65d9a"
-          LIC_GDK="33b6a2b64607f11b759f320ef9dff4ae5c47d97a"
-          LIC_INTEL="e986725930190b49d3e0003d034ec1143b710bee"
-          LIC_PREVIEW="84831b9409646a918e30573bab4c9c91346d8abd"
+          # Write known valid license hashes
+          printf "24333f8a637b3749d10737a45c042284371cd301\n84831b9409646a918e30573bab4c9c91346d8abd\nd975375043a5000ee56811716b2306779dbe56fc\n" > "$ANDROID_HOME/licenses/android-sdk-license"
+          printf "6010071946943d23dbb4f6a5d333aa27b8a65d9a\n" > "$ANDROID_HOME/licenses/android-googletv-license"
+          printf "33b6a2b64607f11b759f320ef9dff4ae5c47d97a\n" > "$ANDROID_HOME/licenses/google-gdk-license"
+          printf "e986725930190b49d3e0003d034ec1143b710bee\n" > "$ANDROID_HOME/licenses/intel-android-sysimage-license"
+          printf "84831b9409646a918e30573bab4c9c91346d8abd\n" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
-          echo -e "$LIC_SDK" > $ANDROID_HOME/licenses/android-sdk-license
-          echo -e "$LIC_TV" > $ANDROID_HOME/licenses/android-googletv-license
-          echo -e "$LIC_GDK" > $ANDROID_HOME/licenses/google-gdk-license
-          echo -e "$LIC_INTEL" > $ANDROID_HOME/licenses/intel-android-sysimage-license
-          echo -e "$LIC_PREVIEW" > $ANDROID_HOME/licenses/android-sdk-preview-license
+          cp "$ANDROID_HOME/licenses/"* "$HOME/.android/licenses/" || true
 
-          cp $ANDROID_HOME/licenses/* ~/.android/licenses/ || true
-
-          for SDK_BIN in "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager" "$ANDROID_HOME/tools/bin/sdkmanager"; do
-            if [ -f "$SDK_BIN" ]; then
-              echo "Accepting licenses via $SDK_BIN..."
-              yes | $SDK_BIN --licenses || true
-            fi
-          done
+          # Also run non-interactive sdkmanager acceptance with fallback
+          if [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          fi
 
       - name: 📦 Build web and sync Capacitor
         run: |
