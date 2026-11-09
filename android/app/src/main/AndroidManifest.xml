@@ -14,7 +14,7 @@
         android:label="Niko Mobile"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.NoActionBar"
+        android:theme="@style/Theme.NikoMobile"
         android:usesCleartextTraffic="false">
 
         <activity
@@ -23,7 +23,7 @@
             android:exported="true"
             android:label="Niko Mobile"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.AppCompat.NoActionBar">
+            android:theme="@style/Theme.NikoMobile">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -60,7 +60,7 @@ dependencies {
 }
 
 task copyWebAssets(type: Copy) {
-    from '../../dist'
+    from file("${rootDir}/../dist")
     into 'src/main/assets/public'
 }
 
