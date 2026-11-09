@@ -21,26 +21,14 @@ jobs:
         with:
           node-version: 20
 
-      - name: 📦 Install Web Dependencies
-        run: |
-          npm install --legacy-peer-deps
-
-      - name: ⚙️ Securely Inject Environment Secrets
-        run: |
-          echo "Injecting environment variables from repository secrets safely..."
-          cat <<EOF > .env
-          GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
-          APP_URL="${{ secrets.APP_URL }}"
-          EOF
-
-      - name: 🏗️ Build Web Application (Vite Production)
-        run: npm run build
-
-      - name: ☕ Setup Java JDK (v17)
+      - name: ☕ Setup Java JDK (v21)
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: '17'
+          distribution: temurin
+          java-version: 21
+
+      - name: 📱 Setup Android SDK Tools
+        uses: android-actions/setup-android@v3
 
       - name: 📜 Pre-Accept All Android SDK Licenses
         run: |
@@ -71,37 +59,46 @@ jobs:
             fi
           done
 
-      - name: 🐘 Setup Gradle
+      - name: 📦 Build web and sync Capacitor
+        run: |
+          npm install --legacy-peer-deps
+          cat <<EOF > .env
+          GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
+          APP_URL="${{ secrets.APP_URL }}"
+          EOF
+          npm run build
+          npx cap sync android
+
+      - name: 🐘 Setup Gradle Runner
         uses: gradle/actions/setup-gradle@v3
 
-      - name: 🔑 Decode Keystore (Optional for Signed Release)
-        if: env.SIGNING_KEYSTORE_BASE64 != ''
-        env:
-          SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+      - name: 📍 Pin Gradle to 8.11.1
+        working-directory: android
         run: |
-          echo "$SIGNING_KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
-          echo "KEYSTORE_FILE=release.keystore" >> $GITHUB_ENV
-          echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
-          echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+          mkdir -p gradle/wrapper
+          echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
+          echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
+          echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.11.1-all.zip" >> gradle/wrapper/gradle-wrapper.properties
+          echo "networkTimeout=10000" >> gradle/wrapper/gradle-wrapper.properties
+          echo "validateDistributionUrl=true" >> gradle/wrapper/gradle-wrapper.properties
+          echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
+          echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
 
-      - name: 🔨 Compile Android APK via Gradle
-        working-directory: ./android
+      - name: 🔨 Build APK
+        working-directory: android
         run: |
-          if [ -f "gradlew" ]; then
-            chmod +x gradlew || true
-            ./gradlew assembleDebug --warning-mode=none -x test -x lint || gradle assembleDebug --warning-mode=none -x test -x lint || true
-          else
-            gradle assembleDebug --warning-mode=none -x test -x lint || true
+          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            echo "Bootstrapping Gradle wrapper..."
+            gradle wrapper --gradle-version 8.11.1 || true
           fi
+          chmod +x gradlew || true
+          ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee ../build.log || gradle assembleDebug --stacktrace --no-daemon 2>&1 | tee ../build.log
 
-          if find app/build/outputs/apk -name "*.apk" | grep -q apk; then
-            echo "✅ Android APK compiled and packaged successfully!"
-            exit 0
-          else
-            echo "❌ APK output file not detected."
-            exit 1
-          fi
+      - name: 🔍 Inspect build log on failure
+        if: failure()
+        run: |
+          echo "=== GRADLE FAILURE DIAGNOSTICS ==="
+          grep -n -A25 "What went wrong" build.log || head -n 80 build.log
 
       - name: 📤 Upload APK Artifact for Mobile Download
         uses: actions/upload-artifact@v4

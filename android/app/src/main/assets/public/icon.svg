@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F3E5AB"/>
+      <stop offset="50%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#AA8C2C"/>
+    </linearGradient>
+    <radialGradient id="darkBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1A1A1A"/>
+      <stop offset="100%" stop-color="#0B0B0B"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#darkBg)"/>
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="none" stroke="url(#goldGrad)" stroke-width="6" opacity="0.6"/>
+  <!-- Phone outline -->
+  <rect x="156" y="96" width="200" height="320" rx="36" fill="none" stroke="url(#goldGrad)" stroke-width="12"/>
+  <!-- Phone screen inner -->
+  <rect x="176" y="140" width="160" height="220" rx="16" fill="#141414"/>
+  <!-- Speaker notch -->
+  <rect x="226" y="116" width="60" height="8" rx="4" fill="url(#goldGrad)"/>
+  <!-- Home button / Touch pill -->
+  <rect x="236" y="380" width="40" height="12" rx="6" fill="url(#goldGrad)"/>
+  <!-- Elegant N monogram inside screen -->
+  <path d="M216 180 V320 L296 200 V320" fill="none" stroke="url(#goldGrad)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
