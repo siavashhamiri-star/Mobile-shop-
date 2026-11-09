@@ -44,15 +44,12 @@ jobs:
 
       - name: 📜 Pre-Accept All Android SDK Licenses
         run: |
-          # Set ANDROID_HOME environment variable if not already set
           export ANDROID_HOME=${ANDROID_HOME:-/usr/local/lib/android/sdk}
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           
-          # Create license directories in all potential Android SDK locations
           mkdir -p $ANDROID_HOME/licenses
           mkdir -p ~/.android/licenses
 
-          # Write mandatory license hashes (including Google TV, SDK, NDK & GDK)
           LIC_SDK="24333f8a637b3749d10737a45c042284371cd301\n84831b9409646a918e30573bab4c9c91346d8abd\nd975375043a5000ee56811716b2306779dbe56fc"
           LIC_TV="6010071946943d23dbb4f6a5d333aa27b8a65d9a"
           LIC_GDK="33b6a2b64607f11b759f320ef9dff4ae5c47d97a"
@@ -67,7 +64,6 @@ jobs:
 
           cp $ANDROID_HOME/licenses/* ~/.android/licenses/ || true
 
-          # Pipe 'yes' to all sdkmanager binaries to auto-accept remaining prompt queries
           for SDK_BIN in "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager" "$ANDROID_HOME/tools/bin/sdkmanager"; do
             if [ -f "$SDK_BIN" ]; then
               echo "Accepting licenses via $SDK_BIN..."
@@ -92,11 +88,8 @@ jobs:
       - name: 🔨 Compile Android APK via Gradle
         working-directory: ./android
         run: |
-          if [ ! -f gradlew ]; then
-            gradle wrapper
-          fi
-          chmod +x gradlew
-          ./gradlew assembleDebug || gradle assembleDebug
+          chmod +x gradlew || true
+          ./gradlew assembleDebug --stacktrace
 
       - name: 📤 Upload APK Artifact for Mobile Download
         uses: actions/upload-artifact@v4

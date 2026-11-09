@@ -2,17 +2,16 @@ apply plugin: 'com.android.application'
 
 android {
     namespace "com.nikomobile.app"
-    compileSdkVersion 34
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.nikomobile.app"
-        minSdkVersion 22
-        targetSdkVersion 34
+        minSdk 22
+        targetSdk 34
         versionCode 1
         versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
-        // Securely inject API configuration if provided at build time
         manifestPlaceholders = [
             appUrl: project.findProperty("APP_URL") ?: "https://nikomobile.ir"
         ]
@@ -20,7 +19,6 @@ android {
 
     signingConfigs {
         release {
-            // Environment-based or secure keystore resolution
             if (System.getenv("KEYSTORE_FILE") != null) {
                 storeFile file(System.getenv("KEYSTORE_FILE"))
                 storePassword System.getenv("KEYSTORE_PASSWORD")
@@ -32,8 +30,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             if (System.getenv("KEYSTORE_FILE") != null) {
                 signingConfig signingConfigs.release
@@ -60,3 +58,10 @@ dependencies {
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.webkit:webkit:1.10.0'
 }
+
+task copyWebAssets(type: Copy) {
+    from '../../dist'
+    into 'src/main/assets/public'
+}
+
+preBuild.dependsOn copyWebAssets
