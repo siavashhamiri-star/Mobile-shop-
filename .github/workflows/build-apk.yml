@@ -88,19 +88,17 @@ jobs:
       - name: 🔨 Compile Android APK via Gradle
         working-directory: ./android
         run: |
-          if [ -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+          if [ -f "gradlew" ]; then
             chmod +x gradlew || true
-            ./gradlew assembleDebug --stacktrace
+            ./gradlew assembleDebug --info
           else
-            echo "gradle-wrapper.jar not found, compiling directly via Gradle CLI..."
-            gradle assembleDebug --stacktrace
+            gradle assembleDebug --info
           fi
 
       - name: 📤 Upload APK Artifact for Mobile Download
         uses: actions/upload-artifact@v4
         with:
           name: niko-mobile-apk
-          path: |
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/apk/debug/*.apk
+          path: android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
           retention-days: 14
