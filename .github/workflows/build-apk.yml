@@ -88,8 +88,13 @@ jobs:
       - name: 🔨 Compile Android APK via Gradle
         working-directory: ./android
         run: |
-          chmod +x gradlew || true
-          ./gradlew assembleDebug --stacktrace
+          if [ -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            chmod +x gradlew || true
+            ./gradlew assembleDebug --stacktrace
+          else
+            echo "gradle-wrapper.jar not found, compiling directly via Gradle CLI..."
+            gradle assembleDebug --stacktrace
+          fi
 
       - name: 📤 Upload APK Artifact for Mobile Download
         uses: actions/upload-artifact@v4
