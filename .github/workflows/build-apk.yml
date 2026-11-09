@@ -84,7 +84,7 @@ jobs:
           echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
           echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
 
-      - name: 🔨 Build APK
+      - name: 🔨 Build Debug APK
         working-directory: android
         run: |
           if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
@@ -92,13 +92,27 @@ jobs:
             gradle wrapper --gradle-version 8.11.1 || true
           fi
           chmod +x gradlew || true
-          ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee ../build.log || gradle assembleDebug --stacktrace --no-daemon 2>&1 | tee ../build.log
+          ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee "$GITHUB_WORKSPACE/build.log" || gradle assembleDebug --stacktrace --no-daemon 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+          find app/build/outputs/apk -name "*.apk" || true
 
-      - name: 🔍 Inspect build log on failure
+      - name: 🔍 Gradle failure diagnostics
         if: failure()
         run: |
           echo "=== GRADLE FAILURE DIAGNOSTICS ==="
-          grep -n -A25 "What went wrong" build.log || head -n 80 build.log
+          LOG_FILE="$GITHUB_WORKSPACE/build.log"
+          if [ -f "$LOG_FILE" ]; then
+            echo "--- Matching Errors from build.log ---"
+            grep -n -A15 "What went wrong" "$LOG_FILE" || true
+            grep -n "^e: \|error: \|FAILED" "$LOG_FILE" || true
+            echo "--- Log Tail ---"
+            tail -n 60 "$LOG_FILE" || true
+          elif [ -f "android/build.log" ]; then
+            grep -n -A15 "What went wrong" "android/build.log" || true
+            tail -n 60 "android/build.log" || true
+          else
+            echo "build.log not found in workspace."
+            find . -name "*.log" || true
+          fi
 
       - name: 📤 Upload APK Artifact for Mobile Download
         uses: actions/upload-artifact@v4
