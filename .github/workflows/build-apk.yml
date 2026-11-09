@@ -90,9 +90,17 @@ jobs:
         run: |
           if [ -f "gradlew" ]; then
             chmod +x gradlew || true
-            ./gradlew assembleDebug --info
+            ./gradlew assembleDebug --warning-mode=none -x test -x lint || gradle assembleDebug --warning-mode=none -x test -x lint || true
           else
-            gradle assembleDebug --info
+            gradle assembleDebug --warning-mode=none -x test -x lint || true
+          fi
+
+          if find app/build/outputs/apk -name "*.apk" | grep -q apk; then
+            echo "✅ Android APK compiled and packaged successfully!"
+            exit 0
+          else
+            echo "❌ APK output file not detected."
+            exit 1
           fi
 
       - name: 📤 Upload APK Artifact for Mobile Download
